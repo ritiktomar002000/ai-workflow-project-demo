@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>snip — url shortener</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#262b36; --fg:#e6e9ef; --mut:#8a93a6; --acc:#5b9dff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--fg); }
+  .wrap { max-width:760px; margin:0 auto; padding:48px 20px; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.02em; }
+  p.sub { color:var(--mut); margin:0 0 28px; }
+  .row { display:flex; gap:8px; }
+  input { flex:1; background:var(--card); border:1px solid var(--line); color:var(--fg);
+          padding:12px 14px; border-radius:10px; font-size:15px; }
+  input:focus { outline:none; border-color:var(--acc); }
+  button { background:var(--acc); color:#06101f; border:0; padding:0 18px; border-radius:10px;
+           font-weight:600; cursor:pointer; }
+  button:hover { filter:brightness(1.08); }
+  .err { color:#ff7a7a; min-height:20px; margin:8px 2px 0; font-size:13px; }
+  table { width:100%; border-collapse:collapse; margin-top:28px; }
+  th,td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
+  th { color:var(--mut); font-weight:500; }
+  a { color:var(--acc); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .clicks { font-variant-numeric:tabular-nums; }
+  .empty { color:var(--mut); padding:24px 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>snip</h1>
+  <p class="sub">Paste a long URL, get a short one. Clicks are counted.</p>
+  <div class="row">
+    <input id="url" placeholder="https://example.com/some/very/long/path" autofocus />
+    <button id="go">Shorten</button>
+  </div>
+  <div class="err" id="err"></div>
+
+  <table id="tbl" hidden>
+    <thead><tr><th>Short</th><th>Destination</th><th class="clicks">Clicks</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty">No links yet.</div>
+</div>
+
+<script>
+const base = location.origin;
+const $ = (id) => document.getElementById(id);
+
+async function load() {
+  const links = await (await fetch("/api/links")).json();
+  const rows = $("rows");
+  rows.innerHTML = "";
+  $("tbl").hidden = links.length === 0;
+  $("empty").hidden = links.length !== 0;
+  for (const l of links) {
+    const short = `${base}/${l.code}`;
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td><a href="${short}" target="_blank" rel="noopener">/${l.code}</a></td>` +
+      `<td><a href="${l.url}" target="_blank" rel="noopener">${l.url.slice(0,48)}${l.url.length>48?"…":""}</a></td>` +
+      `<td class="clicks">${l.clicks}</td>`;
+    rows.appendChild(tr);
+  }
+}
+
+async function shorten() {
+  $("err").textContent = "";
+  const url = $("url").value.trim();
+  if (!url) return;
+  const res = await fetch("/api/links", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  const data = await res.json();
+  if (!res.ok) { $("err").textContent = data.error || "Something went wrong"; return; }
+  $("url").value = "";
+  load();
+}
+
+$("go").addEventListener("click", shorten);
+$("url").addEventListener("keydown", (e) => { if (e.key === "Enter") shorten(); });
+load();
+</script>
+</body>
+</html>
