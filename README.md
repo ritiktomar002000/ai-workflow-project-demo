@@ -4,8 +4,6 @@
 
 A minimal URL shortener with click analytics. TypeScript end-to-end: an Express API, a dependency-light persistence layer, a no-framework dashboard, and a full test suite.
 
-Built in a single ~30-minute session to demonstrate working full-stack TypeScript and an AI-assisted development workflow (see [`AI_WORKFLOW.md`](./AI_WORKFLOW.md)).
-
 ## Features
 
 - **Shorten** any `http(s)` URL to a 7-character, hand-typeable code (ambiguous characters like `0/O/I/l` excluded).
